@@ -1,0 +1,48 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.main-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100dvw;
+  height: 100dvh;
+}
+
+#puzzle-container {
+  width: 75dvw;
+  height: 75dvh;
+
+  display: grid;
+
+  grid-template-columns: repeat(var(--column-count, 3), 1fr);
+  grid-template-rows: repeat(var(--row-count, 3), 1fr);
+
+  background-color: #f9f3f3;
+}
+
+@keyframes piecePlaced {
+  0% {
+    transform: scale(0.95);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.puzzle-piece {
+  width: 100%;
+  height: 100%;
+}
+
+.puzzle-piece.placed {
+  animation: ease-in-out piecePlaced 300ms;
+}
