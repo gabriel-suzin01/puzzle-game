@@ -18,6 +18,8 @@
 
   display: grid;
 
+  place-content: center;
+
   grid-template-columns: repeat(var(--column-count, 3), 1fr);
   grid-template-rows: repeat(var(--row-count, 3), 1fr);
 
@@ -38,34 +40,33 @@
   }
 }
 
-.puzzle-cell {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
+#puzzle-container {
+  display: grid;
+  grid-template-columns: repeat(var(--column-count, 3), 150px);
+  grid-template-rows: repeat(var(--row-count, 3), 150px);
 
-.puzzle-cell {
-  position: relative;
-  width: 100px;
-  height: 100px;
+  place-content: center;
+  background-color: #f9f3f3;
+
+  overflow: visible;
 }
 
 .puzzle-piece {
-  position: absolute;
-  width: 140px;
-  height: 140px;
+  grid-column: var(--col);
+  grid-row: var(--row);
 
-  top: -20px;
-  left: -20px;
+  width: 230px;
+  height: 230px;
 
-  transform: rotate(var(--piece-rotation, 0deg));
-  transform-origin: center center;
-
-  background-image: var(--piece-url);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  transform: translate(-40px, -40px);
 
   pointer-events: none;
+
+  svg {
+    pointer-events: auto;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .puzzle-piece.placed {
