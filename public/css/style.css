@@ -38,9 +38,34 @@
   }
 }
 
-.puzzle-piece {
+.puzzle-cell {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+
+.puzzle-cell {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.puzzle-piece {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+
+  top: -20px;
+  left: -20px;
+
+  transform: rotate(var(--piece-rotation, 0deg));
+  transform-origin: center center;
+
+  background-image: var(--piece-url);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+
+  pointer-events: none;
 }
 
 .puzzle-piece.placed {
