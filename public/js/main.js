@@ -19,38 +19,23 @@
 
       resolution.push(newLine);
     }
-  }
 
-  function updateBoard(container) {
-    const rowCount = resolution.length;
-    const colCount = resolution[0].length;
+    const puzzleContainer = document.getElementById("puzzle-container");
 
-    container.innerHTML = "";
-
-    let newResolution = [];
-
-    for (let i = 0; i < rowCount; i++) {
-      let newLine = [];
-      for (let j = 0; j < colCount; j++) {
-        let oldRight = j > 0 ? newLine[j - 1][2] : null;
-        let oldBottom = i > 0 ? newResolution[i - 1][j][3] : null;
-
-        const left = oldRight === null ? null : !oldRight;
-        const top = oldBottom === null ? null : !oldBottom;
-
-        const right = j < colCount - 1 ? Math.random() > 0.5 : null;
-        const bottom = i < rowCount - 1 ? Math.random() > 0.5 : null;
-
-        newLine.push([left, top, right, bottom]);
-      }
-      newResolution.push(newLine);
+    if (!puzzleContainer) {
+      setTimeout(startBoard, 200);
+      return;
     }
 
-    resolution = newResolution;
-
     for (let i = 0; i < rowCount; i++) {
       for (let j = 0; j < colCount; j++) {
-        placePiece(resolution[i][j], container, i, j);
+        const newEmptyPiece = document.createElement("div");
+        newEmptyPiece.classList.add("empty-place");
+        newEmptyPiece.style.gridRow = i + 1;
+        newEmptyPiece.style.gridColumn = j + 1;
+        newEmptyPiece.dataset.i = i;
+        newEmptyPiece.dataset.j = j;
+        puzzleContainer.appendChild(newEmptyPiece);
       }
     }
   }
@@ -99,16 +84,20 @@
     return path + "Z";
   }
 
-  function placePiece(connections, container, i, j) {
+  function randomizePiecePosition(connections, i, j) {
     let path = getPiecePath(connections);
+
+    const mainContainer = document.querySelector(".main-container");
+
+    if (!mainContainer) {
+      setTimeout(setup, 200);
+      return;
+    }
 
     const puzzlePiece = document.createElement("div");
     puzzlePiece.classList.add("puzzle-piece");
-
-    puzzlePiece.style.setProperty("--row", i + 1);
-    puzzlePiece.style.setProperty("--col", j + 1);
-
-    puzzlePiece.style.zIndex = i * 10 + j;
+    puzzlePiece.dataset.i = i;
+    puzzlePiece.dataset.j = j;
 
     let red = Math.floor(Math.random() * 256);
     let green = Math.floor(Math.random() * 256);
@@ -116,21 +105,89 @@
     let rgb = `rgb(${red}, ${green}, ${blue})`;
 
     puzzlePiece.innerHTML = `
-      <svg class="puzzle-svg" viewBox="0 0 230 230" xmlns="http://www.w3.org">
-        <path d="${path}" fill="${rgb}" stroke="rgba(0,0,0,0.1)" stroke-width="2" />
+      <svg class="puzzle-svg" viewBox="0 0 230 230" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none" >
+        <path d="${path}" fill="${rgb}" stroke="rgba(0,0,0,0.1)" stroke-width="2" style="pointer-events: none" />
       </svg>
     `;
 
-    container.appendChild(puzzlePiece);
+    puzzlePiece.style.position = "absolute";
+    mainContainer.appendChild(puzzlePiece);
+
+    const containerRect = mainContainer.getBoundingClientRect();
+    const pieceRect = puzzlePiece.getBoundingClientRect();
+
+    const centerX = pieceRect.width / 2;
+    const centerY = pieceRect.height / 2;
+
+    const normalize = (x, oldMin, newMin, oldMax, newMax) =>
+      newMin + ((x - oldMin) * (newMax - newMin)) / (oldMax - oldMin);
+
+    const randomX = Math.floor(Math.random() * containerRect.width);
+    const randomY = Math.floor(Math.random() * containerRect.height);
+
+    const left = normalize(
+      randomX,
+      0,
+      centerX,
+      containerRect.width,
+      containerRect.width - centerX,
+    );
+    const top = normalize(
+      randomY,
+      0,
+      centerY,
+      containerRect.height,
+      containerRect.height - centerY,
+    );
+
+    puzzlePiece.style.left = `${left}px`;
+    puzzlePiece.style.top = `${top}px`;
+  }
+
+  function updateBoard() {
+    const rowCount = resolution.length;
+    const colCount = resolution[0].length;
+
+    let newResolution = [];
+
+    for (let i = 0; i < rowCount; i++) {
+      let newLine = [];
+      for (let j = 0; j < colCount; j++) {
+        let oldRight = j > 0 ? newLine[j - 1][2] : null;
+        let oldBottom = i > 0 ? newResolution[i - 1][j][3] : null;
+
+        const left = oldRight === null ? null : !oldRight;
+        const top = oldBottom === null ? null : !oldBottom;
+
+        const right = j < colCount - 1 ? Math.random() > 0.5 : null;
+        const bottom = i < rowCount - 1 ? Math.random() > 0.5 : null;
+
+        newLine.push([left, top, right, bottom]);
+      }
+      newResolution.push(newLine);
+    }
+
+    resolution = newResolution;
+
+    for (let i = 0; i < rowCount; i++) {
+      for (let j = 0; j < colCount; j++) {
+        randomizePiecePosition(resolution[i][j], i, j);
+      }
+    }
   }
 
   function setup() {
+    const mainContainer = document.querySelector(".main-container");
     const container = document.getElementById("puzzle-container");
 
-    if (!container) {
+    if (!mainContainer || !container) {
       setTimeout(setup, 100);
       return;
     }
+
+    mainContainer.querySelectorAll(".puzzle-piece").forEach((piece) => {
+      piece.remove();
+    });
 
     const colCount = Number(container.dataset.columns ?? 0);
     const rowCount = Number(container.dataset.rows ?? 0);
@@ -140,10 +197,98 @@
     container.style.setProperty("--column-count", colCount);
     container.style.setProperty("--row-count", rowCount);
 
-    updateBoard(container);
+    updateBoard();
   }
 
   setup();
 
   window.resetPuzzle = setup;
 })();
+
+// piece place handler
+
+let currentPiece = null;
+let centerX = 0;
+let centerY = 0;
+
+document.addEventListener("mousedown", (ev) => {
+  if (ev.button !== 0) return;
+
+  const piece = ev.target.closest(".puzzle-piece");
+
+  if (!piece) return;
+
+  currentPiece = piece;
+  currentPiece.style.position = "absolute";
+
+  const rect = currentPiece.getBoundingClientRect();
+
+  centerX = rect.width / 2;
+  centerY = rect.height / 2;
+
+  currentPiece.style.left = `${ev.pageX - centerX}px`;
+  currentPiece.style.top = `${ev.pageY - centerY}px`;
+  currentPiece.style.pointerEvents = "none";
+});
+
+document.addEventListener("mousemove", (ev) => {
+  if (!currentPiece) return;
+
+  currentPiece.style.left = `${ev.clientX - centerX}px`;
+  currentPiece.style.top = `${ev.clientY - centerY}px`;
+});
+
+document.addEventListener("mouseup", (ev) => {
+  if (!currentPiece) return;
+
+  const targetUnder = document.elementFromPoint(ev.clientX, ev.clientY);
+  const container = targetUnder?.closest("#puzzle-container");
+  const emptyPiece = targetUnder?.closest(".empty-place");
+
+  const curI = Number(currentPiece.dataset.i) || 0;
+  const curJ = Number(currentPiece.dataset.j) || 0;
+
+  if (emptyPiece) {
+    const empI = Number(emptyPiece.dataset.i) || 0;
+    const empJ = Number(emptyPiece.dataset.j) || 0;
+
+    if (container && curI === empI && curJ === empJ) {
+      currentPiece.style.position = "static";
+      currentPiece.style.gridArea = `${curI + 1} / ${curJ + 1}`;
+      currentPiece.classList.add("placed");
+      emptyPiece.replaceWith(currentPiece);
+    } else {
+      currentPiece.style.pointerEvents = "auto";
+    }
+  } else {
+    currentPiece.style.pointerEvents = "auto";
+  }
+
+  currentPiece = null;
+});
+
+// general functions
+
+window.changeRowCount = function (value) {
+  const container = document.getElementById("puzzle-container");
+  const rowText = document.getElementById("row-val");
+
+  if (!container || !rowText) return;
+
+  container.dataset.rows = value;
+  rowText.innerHTML = value;
+
+  window.resetPuzzle();
+};
+
+window.changeColCount = function (value) {
+  const container = document.getElementById("puzzle-container");
+  const colText = document.getElementById("col-val");
+
+  if (!container || !colText) return;
+
+  container.dataset.columns = value;
+  colText.innerHTML = value;
+
+  window.resetPuzzle();
+};
