@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="./css/puzzle.css?v=1.0.0" />
+
+    <script type="module" src="./js/essentials.js?v=1.0.0"></script>
+    <script src="./js/puzzle-logic.js?v=1.0.0"></script>
+
+    <link rel="icon" href="./resources/icon.png" type="image/png" />
+    <title>Puzzles</title>
+  </head>
+  <body data-page="solve">
+    <ctm-navbar></ctm-navbar>
+
+    <div class="main-container">
+      <button style="align-self: flex-end; margin: 10px 10px auto 0px" type="button" onclick="window.showOptions(this)">
+        <i class="fa fa-solid fa-gear"></i>
+      </button>
+      <div id="puzzle-container" data-rows="3" data-columns="3"></div>
+    </div>
+
+    <div id="options">
+      <h3>Options</h3>
+
+      <ul>
+        <li style="cursor: pointer">
+          <div class="action" onclick="window.resetPuzzle()"><i class="fa fa-solid fa-sync"></i> Reset puzzle</div>
+        </li>
+        <li style="cursor: pointer">
+          <div class="action" onclick="window.resolvePuzzle()"><i class="fa fa-solid fa-circle-check"></i> Resolve puzzle</div>
+        </li>
+        <li>
+          <label for="row-input-count"><i class="fa fa-solid fa-list"></i> Row quantity: <span id="row-val">3</span> </label>
+          <input id="row-input-count" class="action" type="range" min="3" max="10" onchange="window.changeRowCount(this.value)" />
+        </li>
+        <li>
+          <label for="col-input-count"><i class="fa fa-solid fa-table-columns"></i> Column quantity: <span id="col-val">3</span> </label>
+          <input id="col-input-count" class="action" type="range" min="3" max="10" onchange="window.changeColCount(this.value)" />
+        </li>
+        <li>
+          <label for="input-anexo"><i class="fa fa-solid fa-paperclip"></i> Attach photo: </label>
+          <input id="input-anexo" class="action" type="file" accept="image/png, image/jpg, image/jpeg" onchange="window.resetPuzzle()" />
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>

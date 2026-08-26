@@ -1,17 +1,17 @@
 (async function () {
   let resolution = [];
 
-  function startBoard(rowCount, colCount) {
+  function startBoard() {
     resolution = [];
 
-    for (let i = 0; i < rowCount; i++) {
+    for (let i = 0; i < window.rowCount; i++) {
       let newLine = [];
 
-      for (let j = 0; j < colCount; j++) {
+      for (let j = 0; j < window.colCount; j++) {
         const left = j === 0 ? null : undefined;
         const top = i === 0 ? null : undefined;
-        const right = j === colCount - 1 ? null : undefined;
-        const bottom = i === rowCount - 1 ? null : undefined;
+        const right = j === window.colCount - 1 ? null : undefined;
+        const bottom = i === window.rowCount - 1 ? null : undefined;
 
         // connections order: left, top, right, bottom.
         newLine.push([left, top, right, bottom]);
@@ -27,8 +27,8 @@
       return;
     }
 
-    for (let i = 0; i < rowCount; i++) {
-      for (let j = 0; j < colCount; j++) {
+    for (let i = 0; i < window.rowCount; i++) {
+      for (let j = 0; j < window.colCount; j++) {
         const newEmptyPiece = document.createElement("div");
         newEmptyPiece.classList.add("empty-place");
         newEmptyPiece.style.gridRow = i + 1;
@@ -96,17 +96,65 @@
 
     const puzzlePiece = document.createElement("div");
     puzzlePiece.classList.add("puzzle-piece");
+    puzzlePiece.style.gridArea = `${i + 1} / ${j + 1}`;
     puzzlePiece.dataset.i = i;
     puzzlePiece.dataset.j = j;
 
-    let red = Math.floor(Math.random() * 256);
-    let green = Math.floor(Math.random() * 256);
-    let blue = Math.floor(Math.random() * 256);
-    let rgb = `rgb(${red}, ${green}, ${blue})`;
+    const pieceSize = 230;
+    const baseSize = 150;
+    const offset = 40;
+
+    const fileInput = document.getElementById("input-anexo");
+    const file = fileInput.files[0];
+
+    let fill;
+    let image = "";
+
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const patternId = `foto-puzzle-${i}-${j}`;
+
+      const maxSizeX = baseSize * window.colCount;
+      const maxSizeY = baseSize * window.rowCount;
+
+      const posX = -j * baseSize + offset;
+      const posY = -i * baseSize + offset;
+
+      image = `
+        <defs>
+          <pattern
+            id="${patternId}"
+            x="0"
+            y="0"
+            width="${pieceSize}"
+            height="${pieceSize}"
+            patternUnits="userSpaceOnUse"
+          >
+            <image
+              href="${url}"
+              x="${posX}"
+              y="${posY}"
+              width="${maxSizeX}"
+              height="${maxSizeY}"
+              preserveAspectRatio="none"
+            />
+          </pattern>
+        </defs>`;
+
+      fill = `url(#${patternId})`;
+    } else {
+      let red = Math.floor(Math.random() * 256);
+      let green = Math.floor(Math.random() * 256);
+      let blue = Math.floor(Math.random() * 256);
+      fill = `rgb(${red}, ${green}, ${blue})`;
+
+      puzzlePiece.style.color = fill;
+    }
 
     puzzlePiece.innerHTML = `
-      <svg class="puzzle-svg" viewBox="0 0 230 230" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none" >
-        <path d="${path}" fill="${rgb}" stroke="rgba(0,0,0,0.1)" stroke-width="2" style="pointer-events: none" />
+      <svg class="puzzle-svg" viewBox="0 0 ${pieceSize} ${pieceSize}" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none" >
+        ${image}
+        <path d="${path}" fill="${fill}" stroke="rgba(0,0,0,0.1)" stroke-width="2" style="pointer-events: none" />
       </svg>
     `;
 
@@ -189,13 +237,13 @@
       piece.remove();
     });
 
-    const colCount = Number(container.dataset.columns ?? 0);
-    const rowCount = Number(container.dataset.rows ?? 0);
+    window.rowCount = Number(container.dataset.rows ?? 0);
+    window.colCount = Number(container.dataset.columns ?? 0);
 
-    startBoard(rowCount, colCount);
+    startBoard();
 
-    container.style.setProperty("--column-count", colCount);
-    container.style.setProperty("--row-count", rowCount);
+    container.style.setProperty("--row-count", window.rowCount);
+    container.style.setProperty("--column-count", window.colCount);
 
     updateBoard();
   }
@@ -210,6 +258,12 @@
 let currentPiece = null;
 let centerX = 0;
 let centerY = 0;
+
+window.__placePiece = function (place, newPiece) {
+  newPiece.style.position = "static";
+  place.replaceWith(newPiece);
+  newPiece.classList.add("placed");
+};
 
 document.addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
@@ -253,10 +307,9 @@ document.addEventListener("mouseup", (ev) => {
     const empJ = Number(emptyPiece.dataset.j) || 0;
 
     if (container && curI === empI && curJ === empJ) {
-      currentPiece.style.position = "static";
-      currentPiece.style.gridArea = `${curI + 1} / ${curJ + 1}`;
-      currentPiece.classList.add("placed");
-      emptyPiece.replaceWith(currentPiece);
+      window.__placePiece(emptyPiece, currentPiece);
+
+      window.checkGameWon();
     } else {
       currentPiece.style.pointerEvents = "auto";
     }
@@ -268,6 +321,68 @@ document.addEventListener("mouseup", (ev) => {
 });
 
 // general functions
+
+window.showOptions = function (button) {
+  const options = document.getElementById("options");
+
+  if (!options) return;
+
+  const rect = button.getBoundingClientRect();
+
+  options.classList.toggle("show");
+  options.style.top = `${rect.top + rect.height + 5}px`;
+};
+
+window.checkGameWon = function () {
+  const container = document.getElementById("puzzle-container");
+  const options = document.getElementById("options");
+
+  if (!container || !options) {
+    setTimeout(window.checkGameWon, 200);
+    return;
+  }
+
+  const pieces = container.querySelectorAll(":scope > :not(.puzzle-piece)");
+
+  if (pieces.length <= 0) {
+    const counter = document.createElement("span");
+    options.appendChild(counter);
+
+    let timer = 5;
+
+    const intervalId = setInterval(() => {
+      counter.innerHTML = "Resetando puzzle em: " + timer;
+      timer--;
+
+      if (timer < 0) {
+        clearInterval(intervalId);
+        window.resetPuzzle();
+        counter.remove();
+      }
+    }, 1000);
+  }
+};
+
+window.resolvePuzzle = function () {
+  const container = document.getElementById("puzzle-container");
+
+  container.querySelectorAll(".empty-place").forEach((el) => {
+    const i = el.dataset.i;
+    const j = el.dataset.j;
+
+    if (!i || !j) return;
+
+    const piece = document.querySelector(
+      `.puzzle-piece[data-i="${i}"][data-j="${j}"]`,
+    );
+
+    if (!piece) return;
+
+    window.__placePiece(el, piece);
+  });
+
+  window.checkGameWon();
+};
 
 window.changeRowCount = function (value) {
   const container = document.getElementById("puzzle-container");
